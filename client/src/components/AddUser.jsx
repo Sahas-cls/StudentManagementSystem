@@ -1,12 +1,16 @@
 import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as yup from "yup";
+import axios from "axios"
+import Swal from "sweetalert2"
+import api from "../../api/api";
 
 const AddUser = () => {
+  const apiUrl = import.meta.env.VITE_API_URL;
   const validations = yup.object({
     fullName: yup.string().required("Full name is required").min(3, "Too short"),
     email: yup.string().email("Invalid email").required("Email required"),
-    username: yup.string().required("Username required").min(3, "Too short"),
+    userName: yup.string().required("userName required").min(3, "Too short"),
     password: yup.string().required("Password required").min(6, "Min 6 characters"),
     role: yup.string().required("Role required"),
     phone: yup.string().matches(/^[0-9]{10}$/, "Invalid phone number"),
@@ -18,15 +22,37 @@ const AddUser = () => {
         initialValues={{
           fullName: "",
           email: "",
-          username: "",
+          userName: "",
           password: "",
           role: "admin",
           status: "active",
           phone: "",
         }}
         validationSchema={validations}
-        onSubmit={(values) => {
+        onSubmit={async (values, { setSubmitting, setFieldError }) => {
           console.log(values); // Replace with API call
+          try {
+            const response = await axios.post(`${apiUrl}/users/createUser`, values, { withCredentials: true })
+
+            if (response.status === 201) {
+              Swal.fire({
+                toast: true,
+                title: "Operation success",
+                text: "New user creation success...",
+                icon: "success",
+                timer: 3000,
+                position: "bottom-end",
+                timerProgressBar: true,
+              })
+            }
+          } catch (error) {
+            if (error.status === 400) {
+              const err = error.response.data;
+              console.log(err)
+              setFieldError(err.path, err.message)
+            }
+            console.log(error)
+          }
         }}
       >
         {() => (
@@ -67,17 +93,17 @@ const AddUser = () => {
               </ErrorMessage>
             </div>
 
-            {/* Username */}
+            {/* userName */}
             <div className="flex flex-col">
-              <label htmlFor="username" className="text-sm font-medium text-gray-700 mb-1">
-                Username
+              <label htmlFor="userName" className="text-sm font-medium text-gray-700 mb-1">
+                userName
               </label>
               <Field
-                name="username"
-                id="username"
+                name="userName"
+                id="userName"
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-              <ErrorMessage name="username">
+              <ErrorMessage name="userName">
                 {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
               </ErrorMessage>
             </div>
@@ -170,7 +196,7 @@ const AddUser = () => {
           </Form>
         )}
       </Formik>
-    </div>
+    </div >
   );
 };
 

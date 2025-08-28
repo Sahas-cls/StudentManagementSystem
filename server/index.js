@@ -9,15 +9,25 @@ const db = require("./models")
 require("dotenv").config();
 
 // middlewares
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(express.json());
 app.use(morgan("dev"))
 app.use(express.urlencoded({ extended: true }))
 
-
 // routes
 const userRoutes = require("./routes/userRoutes")
 app.use("/api/users", userRoutes);
+
+// ✅ Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.log("path from error handler ====== : ", err.path)
+  console.error(err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message,
+    path: err.path || null
+  });
+})
 
 
 db.sequelize.sync({}).then(() => {

@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 
 const PageManageUsers = () => {
   const [isAdding, setIsAdding] = useState(false)
+  const [editingUser, setEditingUser] = useState({});
 
   // framer motion variants
   const containerVar = {
@@ -46,7 +47,7 @@ const PageManageUsers = () => {
           )}
         </AnimatePresence>
         <div variants={viewUsersVar} initial="visible" animate="visible" className="">
-          <ViewUsers />
+          <ViewUsers setEditingUser={setEditingUser} />
         </div>
       </div>
     </div>
