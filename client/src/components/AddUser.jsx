@@ -1,13 +1,23 @@
 import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as yup from "yup";
+import axios from "axios";
+import Swal from "sweetalert2";
+import api from "../../api/api";
 
-const AddUser = () => {
+const AddUser = ({ onUserAdded, setIsAdding }) => {
+  const apiUrl = import.meta.env.VITE_API_URL;
   const validations = yup.object({
-    fullName: yup.string().required("Full name is required").min(3, "Too short"),
+    fullName: yup
+      .string()
+      .required("Full name is required")
+      .min(3, "Too short"),
     email: yup.string().email("Invalid email").required("Email required"),
-    username: yup.string().required("Username required").min(3, "Too short"),
-    password: yup.string().required("Password required").min(6, "Min 6 characters"),
+    userName: yup.string().required("userName required").min(3, "Too short"),
+    password: yup
+      .string()
+      .required("Password required")
+      .min(6, "Min 6 characters"),
     role: yup.string().required("Role required"),
     phone: yup.string().matches(/^[0-9]{10}$/, "Invalid phone number"),
   });
@@ -18,27 +28,60 @@ const AddUser = () => {
         initialValues={{
           fullName: "",
           email: "",
-          username: "",
+          userName: "",
           password: "",
           role: "admin",
           status: "active",
           phone: "",
         }}
         validationSchema={validations}
-        onSubmit={(values) => {
+        onSubmit={async (values, { setSubmitting, setFieldError }) => {
           console.log(values); // Replace with API call
+          try {
+            const response = await axios.post(
+              `${apiUrl}/users/createUser`,
+              values,
+              { withCredentials: true }
+            );
+
+            if (response.status === 201) {
+              Swal.fire({
+                toast: true,
+                title: "Operation success",
+                text: "New user creation success...",
+                icon: "success",
+                timer: 3000,
+                position: "bottom-end",
+                timerProgressBar: true,
+              });
+              onUserAdded();
+              setIsAdding(false);
+            }
+          } catch (error) {
+            if (error.status === 400) {
+              const err = error.response.data;
+              console.log(err);
+              setFieldError(err.path, err.message);
+            }
+            console.log(error);
+          }
         }}
       >
         {() => (
           <Form className="grid grid-cols-2 gap-x-8 gap-y-4">
             {/* Title */}
             <div className="col-span-2 flex items-center justify-center mb-4">
-              <h1 className="text-xl font-semibold text-gray-700">User Details</h1>
+              <h1 className="text-xl font-semibold text-gray-700">
+                User Details
+              </h1>
             </div>
 
             {/* Full Name */}
             <div className="flex flex-col">
-              <label htmlFor="fullName" className="text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="fullName"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
                 Full Name
               </label>
               <Field
@@ -47,13 +90,18 @@ const AddUser = () => {
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <ErrorMessage name="fullName">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
             {/* Email */}
             <div className="flex flex-col">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
                 Email
               </label>
               <Field
@@ -63,28 +111,38 @@ const AddUser = () => {
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <ErrorMessage name="email">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
-            {/* Username */}
+            {/* userName */}
             <div className="flex flex-col">
-              <label htmlFor="username" className="text-sm font-medium text-gray-700 mb-1">
-                Username
+              <label
+                htmlFor="userName"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
+                userName
               </label>
               <Field
-                name="username"
-                id="username"
+                name="userName"
+                id="userName"
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
-              <ErrorMessage name="username">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+              <ErrorMessage name="userName">
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
             {/* Password */}
             <div className="flex flex-col">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
                 Password
               </label>
               <Field
@@ -94,13 +152,18 @@ const AddUser = () => {
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <ErrorMessage name="password">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
             {/* Phone */}
             <div className="flex flex-col">
-              <label htmlFor="phone" className="text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="phone"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
                 Phone Number
               </label>
               <Field
@@ -109,13 +172,17 @@ const AddUser = () => {
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <ErrorMessage name="phone">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
             {/* Role */}
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Role</label>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Role
+              </label>
               <Field
                 as="select"
                 name="role"
@@ -126,13 +193,17 @@ const AddUser = () => {
                 <option value="superadmin">Super Admin</option>
               </Field>
               <ErrorMessage name="role">
-                {(msg) => <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>}
+                {(msg) => (
+                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                )}
               </ErrorMessage>
             </div>
 
             {/* Status */}
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <div className="flex gap-6">
                 <div className="flex items-center gap-2">
                   <Field
@@ -142,7 +213,12 @@ const AddUser = () => {
                     value="active"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor="statusActive" className="text-sm text-gray-700">Active</label>
+                  <label
+                    htmlFor="statusActive"
+                    className="text-sm text-gray-700"
+                  >
+                    Active
+                  </label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Field
@@ -152,7 +228,12 @@ const AddUser = () => {
                     value="inactive"
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor="statusInactive" className="text-sm text-gray-700">Inactive</label>
+                  <label
+                    htmlFor="statusInactive"
+                    className="text-sm text-gray-700"
+                  >
+                    Inactive
+                  </label>
                 </div>
               </div>
               <div className="text-xs mt-1 h-5"></div>
