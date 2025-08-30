@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../common/Sidebar";
 import Header from "../Header";
 import AddUser from "../AddUser";
@@ -12,7 +12,17 @@ const PageManageUsers = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingUser, setEditingUser] = useState({});
   const { userList, usersLoading, refreshUsers } = useUsers();
+  const formikRef = useRef();
 
+  useEffect(() => {
+    if (!isAdding && formikRef.current) {
+      formikRef.current.resetForm();
+      setEditingUser(null);
+    }
+  }, [isAdding]);
+
+
+  console.log("EDITING USER FROM PARENT COMP: ", editingUser)
   // framer motion variants
   const containerVar = {
     hidden: { opacity: 0, scale: 0.8 },
@@ -37,6 +47,19 @@ const PageManageUsers = () => {
       transition: { duration: 0.8 },
     },
   };
+
+
+  useEffect(() => {
+    if (editingUser?.userId
+    ) {
+      setIsAdding(true)
+    } else {
+      setIsAdding(false)
+    }
+    console.log("editing user from use effect: ", editingUser)
+  }, [editingUser])
+
+
   return (
     <div className="flex overflow-hidden">
       <div className="">
@@ -47,8 +70,11 @@ const PageManageUsers = () => {
         <div className="mt-4 flex justify-end px-8">
           <button
             type="button"
-            className="px-2 py-2 rounded-lg font-semibold bg-secondary text-white flex gap-x-2 items-center"
-            onClick={() => setIsAdding(!isAdding)}
+            className="px-2 py-2 rounded-lg font-semibold bg-primary text-white flex gap-x-2 items-center"
+            onClick={() => {
+
+              setIsAdding(!isAdding);
+            }}
           >
             {isAdding ? (
               <IoClose className="text-lg" />
@@ -66,8 +92,9 @@ const PageManageUsers = () => {
               animate="visible"
               exit="exit"
               className="overflow-hidden"
+
             >
-              <AddUser onUserAdded={refreshUsers} setIsAdding={setIsAdding} />
+              <AddUser onUserAdded={refreshUsers} setIsAdding={setIsAdding} editingUser={editingUser} formikRef={formikRef} />
             </motion.div>
           )}
         </AnimatePresence>

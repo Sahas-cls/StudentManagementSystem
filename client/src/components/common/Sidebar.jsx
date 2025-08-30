@@ -69,7 +69,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className='w-56 bg-gradient-to-b from-secondary/90 to-secondary/70 min-h-screen h-full text-white overflow-hidden border-r border-white/10 flex flex-col'>
+    <div className='w-56 bg-gradient-to-b from-black/90 to-black/70 min-h-screen h-full text-white overflow-hidden border-r border-white/10 flex flex-col'>
       <div className="h-full flex flex-col">
         {/* Logo and Title Section */}
         <div className="pt-8 pb-6 flex-shrink-0">
@@ -79,7 +79,7 @@ const Sidebar = () => {
             transition={{ duration: 0.5, type: "spring", stiffness: "100" }}
             className="flex justify-center"
           >
-            <GiGraduateCap className='text-6xl text-purple-300' />
+            <GiGraduateCap className='text-6xl text-white-300' />
           </motion.div>
           <motion.h1
             initial={{ scale: 0, opacity: 0 }}
@@ -110,7 +110,7 @@ const Sidebar = () => {
                 >
                   {hoveredItem === menu.id && (
                     <motion.div
-                      className="absolute inset-0 bg-white/10"
+                      className="absolute inset-0 bg-slate-800"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -122,7 +122,7 @@ const Sidebar = () => {
                   >
                     <div className="flex items-center gap-3">
                       <span className='text-xl'>
-                        {menu.icon && <menu.icon className="text-purple-300" />}
+                        {menu.icon && <menu.icon className="text-white" />}
                       </span>
                       <span className='text-lg font-medium'>{menu.title}</span>
                     </div>

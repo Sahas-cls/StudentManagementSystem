@@ -6,10 +6,10 @@ const controller = require("../controllers/userController")
 router.post("/createUser", controller.createUser)
 
 // to edit user details
-router.put("/editUser", controller.editUser)
+router.put("/updateUser/:userId", controller.editUser)
 
 // to delete user details
-router.delete("/deleteUser", controller.deleteUser)
+router.delete("/deleteUser/:userId", controller.deleteUser)
 
 // to get all user's details
 router.get("/getUsers", controller.getUsers)

@@ -1,60 +1,103 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import * as yup from "yup";
 import axios from "axios";
 import Swal from "sweetalert2";
 import api from "../../api/api";
+import { motion, AnimatePresence } from "framer-motion";
 
-const AddUser = ({ onUserAdded, setIsAdding }) => {
+const AddUser = ({ onUserAdded, setIsAdding, editingUser, formikRef }) => {
   const apiUrl = import.meta.env.VITE_API_URL;
-  const validations = yup.object({
-    fullName: yup
-      .string()
-      .required("Full name is required")
-      .min(3, "Too short"),
-    email: yup.string().email("Invalid email").required("Email required"),
-    userName: yup.string().required("userName required").min(3, "Too short"),
-    password: yup
-      .string()
-      .required("Password required")
-      .min(6, "Min 6 characters"),
-    role: yup.string().required("Role required"),
-    phone: yup.string().matches(/^[0-9]{10}$/, "Invalid phone number"),
-  });
+
+  // Create validation schema based on whether we're editing a user
+  const getValidationSchema = (isEditing) => {
+    return yup.object({
+      fullName: yup
+        .string()
+        .required("Full name is required")
+        .min(3, "Too short"),
+      email: yup.string().email("Invalid email").required("Email required"),
+      userName: yup.string().required("userName required").min(3, "Too short"),
+      password: yup
+        .string()
+        .test('password-required', 'Password required', function (value) {
+          const { changePassword } = this.parent;
+          // If creating new user, password is always required
+          if (!isEditing) return !!value;
+          // If editing user, password is only required when changePassword is checked
+          return !changePassword || (changePassword && !!value);
+        })
+        .min(6, "Min 6 characters"),
+      role: yup.string().required("Role required"),
+      phone: yup.string().matches(/^[0-9]{10}$/, "Invalid phone number"),
+    });
+  };
+
+  const isEditing = !!editingUser?.userId;
+  const validationSchema = getValidationSchema(isEditing);
 
   return (
     <div className="px-8 py-6 bg-white rounded-lg shadow-md mx-8 my-4">
       <Formik
         initialValues={{
-          fullName: "",
-          email: "",
-          userName: "",
-          password: "",
-          role: "admin",
-          status: "active",
-          phone: "",
+          fullName: editingUser?.fullName || "",
+          email: editingUser?.email || "",
+          userName: editingUser?.userName || "",
+          password: "" || "",
+          role: editingUser?.role || "admin",
+          status: editingUser?.status || "active",
+          phone: editingUser?.mobileNo || "",
+          changePassword: false,
         }}
-        validationSchema={validations}
+        innerRef={formikRef}
+        enableReinitialize
+        validationSchema={validationSchema}
         onSubmit={async (values, { setSubmitting, setFieldError }) => {
-          console.log(values); // Replace with API call
+          console.log("client values: ", values); // Replace with API call
           try {
-            const response = await axios.post(
-              `${apiUrl}/users/createUser`,
-              values,
-              { withCredentials: true }
-            );
+            // Prepare data for submission - remove password if not changing it
+            const submitData = { ...values };
+            if (isEditing && !values.changePassword) {
+              delete submitData.password;
+            }
 
-            if (response.status === 201) {
-              Swal.fire({
+            let response = null;
+            if (!isEditing) {
+              response = await axios.post(
+                `${apiUrl}/users/createUser`,
+                submitData,
+                { withCredentials: true }
+              );
+            } else {
+              response = await axios.put(
+                `${apiUrl}/users/updateUser/${editingUser.userId}`,
+                submitData,
+                { withCredentials: true }
+              );
+            }
+
+            if (response.status === 201 || response.status === 200) {
+              response.status === 200 ? Swal.fire({
                 toast: true,
                 title: "Operation success",
-                text: "New user creation success...",
+                text: "User update success...",
                 icon: "success",
                 timer: 3000,
                 position: "bottom-end",
                 timerProgressBar: true,
-              });
+              }) :
+                Swal.fire({
+                  toast: true,
+                  title: "Operation success",
+                  text: "New user creation success...",
+                  icon: "success",
+                  timer: 3000,
+                  position: "bottom-end",
+                  timerProgressBar: true,
+                });
+
               onUserAdded();
+              response = null;
               setIsAdding(false);
             }
           } catch (error) {
@@ -64,10 +107,12 @@ const AddUser = ({ onUserAdded, setIsAdding }) => {
               setFieldError(err.path, err.message);
             }
             console.log(error);
+          } finally {
+            setSubmitting(false)
           }
         }}
       >
-        {() => (
+        {({ values }) => (
           <Form className="grid grid-cols-2 gap-x-8 gap-y-4">
             {/* Title */}
             <div className="col-span-2 flex items-center justify-center mb-4">
@@ -131,27 +176,6 @@ const AddUser = ({ onUserAdded, setIsAdding }) => {
                 className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <ErrorMessage name="userName">
-                {(msg) => (
-                  <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
-                )}
-              </ErrorMessage>
-            </div>
-
-            {/* Password */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <Field
-                name="password"
-                id="password"
-                type="password"
-                className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <ErrorMessage name="password">
                 {(msg) => (
                   <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
                 )}
@@ -239,13 +263,71 @@ const AddUser = ({ onUserAdded, setIsAdding }) => {
               <div className="text-xs mt-1 h-5"></div>
             </div>
 
+            {!isEditing ? (
+              <div className="flex flex-col">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700 mb-1"
+                >
+                  Password
+                </label>
+                <Field
+                  name="password"
+                  id="password"
+                  type="password"
+                  className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <ErrorMessage name="password">
+                  {(msg) => (
+                    <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                  )}
+                </ErrorMessage>
+              </div>
+            ) : (
+              <div className="grid col-span-2 grid-cols-2 gap-x-8">
+                <div className="flex gap-x-4 items-center">
+                  <Field id="changePassword" name="changePassword" type="checkbox" />
+                  <label htmlFor="changePassword">Change password</label>
+                </div>
+
+                <AnimatePresence>
+                  {values.changePassword && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.4 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0 }}
+                      className="flex flex-col"
+                    >
+                      <label
+                        htmlFor="password"
+                        className="text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Password
+                      </label>
+                      <Field
+                        name="password"
+                        id="password"
+                        type="password"
+                        className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <ErrorMessage name="password">
+                        {(msg) => (
+                          <div className="text-red-600 text-xs mt-1 h-5">{msg}</div>
+                        )}
+                      </ErrorMessage>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
             {/* Submit */}
             <div className="col-span-2 flex justify-end mt-4">
               <button
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Add User
+                {isEditing ? "Edit user" : "Add user"}
               </button>
             </div>
           </Form>

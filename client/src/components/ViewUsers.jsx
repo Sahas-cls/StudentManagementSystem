@@ -6,6 +6,8 @@ import { FaCheckCircle } from "react-icons/fa"; //active icon
 import { MdCancel } from "react-icons/md"; //inactive icon
 import { MdEdit } from "react-icons/md"; //edit icon
 import { MdDelete } from "react-icons/md"; // delete icon
+import Swal from "sweetalert2";
+import axios from "axios";
 
 const ViewUsers = ({
   userList,
@@ -15,27 +17,68 @@ const ViewUsers = ({
 }) => {
   // const { userList, usersLoading, refreshUsers } = useUsers();
   console.log("users list:", userList);
+  const apiUrl = import.meta.env.VITE_API_URL;
+  const handleEditingUser = (user) => {
+    setEditingUser(user)
+  }
+
+  const handleDeleteUser = async (userId) => {
+    //
+    const isDelete = await Swal.fire({
+      title: "Are you sure",
+      text: "This action is permanent and can't be restored",
+      icon: "warning",
+      showCancelButton: true,
+    })
+
+    if (!isDelete.isConfirmed) {
+      return;
+    }
+
+    try {
+      if (userId) {
+        const response = await axios.delete(`${apiUrl}/users/deleteUser/${userId}`, { withCredentials: true })
+        console.log(response)
+        if (response.status
+          === 200) {
+          Swal.fire({
+            toast: true,
+            title: "Success",
+            text: "User delete success",
+            icon: "success",
+            timer: 3000,
+            timerProgressBar: true,
+            position: "bottom-end"
+          });
+          refreshUsers();
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+  }
   return (
     <div>
       <div className="mx-12">
         {Array.isArray(userList) && userList.length > 0 ? (
           <div className="w-full my-8 rounded-lg overflow-hidden">
             <table className="w-full ">
-              <thead className="bg-gradient-to-r from-blue-600 to-blue-500">
+              <thead className="bg-gradient-to-r from-gray-700 to-gray-500">
                 <tr className="">
-                  <th className="px-2 py-4 text-white border-l">User Name</th>
-                  <th className="px-2 py-4 text-white border-l">Full Name</th>
-                  <th className="px-2 py-4 text-white border-l">Email</th>
-                  <th className="px-2 py-4 text-white border-l">Mobile No</th>
-                  <th className="px-2 py-4 text-white border-l">User Role</th>
-                  <th className="px-2 py-4 text-white border-l">Status</th>
-                  <th className="px-2 py-4 text-white border-l">Action</th>
+                  <th className="px-2 py-3 text-white border-l">User Name</th>
+                  <th className="px-2 py-3 text-white border-l">Full Name</th>
+                  <th className="px-2 py-3 text-white border-l">Email</th>
+                  <th className="px-2 py-3 text-white border-l">Mobile No</th>
+                  <th className="px-2 py-3 text-white border-l">User Role</th>
+                  <th className="px-2 py-3 text-white border-l">Status</th>
+                  <th className="px-2 py-3 text-white border-l">Action</th>
                 </tr>
               </thead>
               <tbody className="">
                 {Array.isArray(userList) &&
                   userList.map((user, index) => (
-                    <tr className="odd:bg-blue-100 even:bg-blue-200">
+                    <tr key={index} className="odd:bg-blue-100 even:bg-blue-200">
                       <td className="px-4 py-2 border">{user.userName}</td>
                       <td className="px-4 py-2 border">{user.fullName}</td>
                       <td className="px-4 py-2 border">{user.email}</td>
@@ -43,7 +86,7 @@ const ViewUsers = ({
                       <td className="px-4 py-1  text-center border">
                         {user.userRole === "superadmin" && "Super Admin"}
                         {user.userRole === "admin" && "Admin"}
-                        {user.userRole === "staf" && "Staf User"}
+                        {user.userRole === "staff" && "Staff User"}
                       </td>
                       <td className="px-4 py-1 text-center border">
                         <div className="flex justify-center">
@@ -61,12 +104,14 @@ const ViewUsers = ({
                           <button
                             className="text-2xl text-blue-700"
                             type="button"
+                            onClick={() => handleEditingUser(user)}
                           >
                             <MdEdit />
                           </button>
                           <button
                             className="text-2xl text-red-700"
                             type="button"
+                            onClick={() => handleDeleteUser(user.userId)}
                           >
                             <MdDelete />
                           </button>
